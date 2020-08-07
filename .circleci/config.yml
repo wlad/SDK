@@ -814,10 +814,10 @@ commands:
       - run:
           name: Save Jacoco code coverage (w/ unit tests)
           command: |
-            mkdir -p ~/code-coverage/unit-tests/
-            cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/unit-tests/
+            mkdir -p ~/code-coverage/
+            cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/
       - store_artifacts:
-          path: ~/code-coverage/unit-tests
+          path: ~/code-coverage/jacoco-ut-coverage
 
 
   save-sdk-jacoco-coverage-integrationtests:
@@ -825,10 +825,10 @@ commands:
       - run:
           name: Save Jacoco code coverage (w/ integration tests)
           command: |
-            mkdir -p ~/code-coverage/integration-tests/
-            cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/integration-tests/
+            mkdir -p ~/code-coverage/
+            cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/
       - store_artifacts:
-          path: ~/code-coverage/integration-tests
+          path: ~/code-coverage/jacoco-it-coverage
 
   
   save-sdk-jacoco-coverage-report:
@@ -836,14 +836,14 @@ commands:
       - run:
           name: Save Jacoco's overall code coverage report (w/ unit & integr. tests)
           command: |
-            mkdir -p ~/code-coverage/overall-coverage/
-            cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/overall-coverage/
+            mkdir -p ~/code-coverage/
+            cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
       - store_artifacts:
-          path: ~/code-coverage/overall-coverage
-      # - persist_to_workspace:
-      #     root: /home/circleci
-      #     paths:
-      #       - projects/test-coverage/target/site/jacoco-overall-coverage
+          path: ~/code-coverage/jacoco-overall-coverage
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - code-coverage/jacoco-overall-coverage
 
 
   restore-sdk-jacoco-coverage-report:
