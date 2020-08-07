@@ -264,6 +264,7 @@ jobs:
       - build-and-test-sdk
       - cache-in-sdk-m2-dependencies
       - save-sdk-unittest-results
+      - save-sdk-jacoco-coverage-unittests
       - save-sdk-workspace
       #-----------------------------------#---------------(use this steps for pipeline debugging only)
       # - run: echo mock build SDK        # 
@@ -285,7 +286,9 @@ jobs:
       - cache-in-ehrbase-m2-dependencies      
       - cache-in-sdk-m2-dependencies
       - save-sdk-integrationtest-results
-      - save-sdk-workspace
+      - save-sdk-jacoco-coverage-integrationtests
+      - save-sdk-jacoco-coverage-report
+
 
 
   run-static-code-analysis:
@@ -297,10 +300,7 @@ jobs:
     steps:
       - checkout
       - restore-sdk-workspace
-
-      # - cache-out-sdk-m2-dependencies
-      # - build-and-test-sdk
-
+      - restore-sdk-jacoco-coverage-report
       - sonarcloud/scan:
           cache_version: 1       # NOTE: increment this to force cache rebuild
 
@@ -783,7 +783,7 @@ commands:
       - run:
           name: Save unit test results
           command: |
-            mkdir -p ~/test-results/unit/
+            mkdir -p ~/test-results/unit-tests/
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/unit-tests/ \;
             find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/unit-tests/ \;
           when: always
@@ -798,7 +798,7 @@ commands:
       - run:
           name: Save integration test results
           command: |
-            mkdir -p ~/test-results/integration/
+            mkdir -p ~/test-results/integration-tests/
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/integration-tests/ \;
             find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/integration-tests/ \;
           when: always
@@ -808,11 +808,68 @@ commands:
           path: ~/test-results/integration-tests
 
 
+  save-sdk-jacoco-coverage-unittests:
+    steps:
+      - run:
+          name: Save Jacoco code coverage (w/ unit tests)
+          command: |
+            mkdir -p ~/code-coverage/unit-tests/
+            cp test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/unit-tests/
+      - store_artifacts:
+          path: ~/code-coverage/unit-tests
+      # - persist_to_workspace:
+      #     root: /home/circleci
+      #     paths:
+      #       - code-coverage/unit-tests
+
+
+  save-sdk-jacoco-coverage-integrationtests:
+    steps:
+      - run:
+          name: Save Jacoco code coverage (w/ integration tests)
+          command: |
+            mkdir -p ~/code-coverage/integration-tests/
+            cp test-coverage/target/site/jacoco-it-coverage ~/code-coverage/integration-tests/
+      - store_artifacts:
+          path: ~/code-coverage/integration-tests
+      # - persist_to_workspace:
+      #     root: /home/circleci
+      #     paths:
+      #       - code-coverage/integration-tests
+
+  
+  save-sdk-jacoco-coverage-report:
+    steps:
+      - run:
+          name: Save Jacoco's overall code coverage report (w/ unit & integr. tests)
+          command: |
+            mkdir -p ~/code-coverage/overall-coverage/
+            cp test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/overall-coverage/
+      - store_artifacts:
+          path: ~/code-coverage/overall-coverage
+      - persist_to_workspace:
+          root: /home/circleci
+          paths:
+            - code-coverage/overall-coverage
+
+
+  restore-sdk-jacoco-coverage-report:
+    steps:
+      - attach_workspace:
+          at: /home/circleci/
+      
+
+
+
+
   save-sdk-codecoverage-reports:
     steps:
       - store_artifacts:
           path: test-coverage/target/site
-  
+
+
+
+
 
   save-sdk-workspace:
     steps:
