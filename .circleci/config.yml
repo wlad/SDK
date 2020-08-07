@@ -296,8 +296,11 @@ jobs:
     executor: docker-python3-java11
     steps:
       - checkout
-      - cache-out-sdk-m2-dependencies
-      - build-and-test-sdk
+      - restore-sdk-workspace
+
+      # - cache-out-sdk-m2-dependencies
+      # - build-and-test-sdk
+
       - sonarcloud/scan:
           cache_version: 1       # NOTE: increment this to force cache rebuild
 
@@ -781,13 +784,13 @@ commands:
           name: Save unit test results
           command: |
             mkdir -p ~/test-results/unit/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/unit/ \;
-            find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/integration/ \;
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/unit-tests/ \;
+            find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/unit-tests/ \;
           when: always
       - store_test_results:
           path: ~/test-results
       - store_artifacts:
-          path: ~/test-results/unit
+          path: ~/test-results/unit-tests
   
 
   save-sdk-integrationtest-results:
@@ -796,13 +799,19 @@ commands:
           name: Save integration test results
           command: |
             mkdir -p ~/test-results/integration/
-            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/integration/ \;
-            find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/integration/ \;
+            find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/integration-tests/ \;
+            find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/integration-tests/ \;
           when: always
       - store_test_results:
           path: ~/test-results
       - store_artifacts:
-          path: ~/test-results/integration
+          path: ~/test-results/integration-tests
+
+
+  save-sdk-codecoverage-reports:
+    steps:
+      - store_artifacts:
+          path: test-coverage/target/site
   
 
   save-sdk-workspace:
