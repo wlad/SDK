@@ -733,7 +733,7 @@ commands:
             This way only the Java integration tests are executed.
           command: |
             jps
-            mvn test -Pslow -Dmaven.javadoc.skip=true
+            mvn verify -DskipIntegrationTests=flase -Dmaven.javadoc.skip=true
 
 
   run-java-integration-tests-of-sdk:
