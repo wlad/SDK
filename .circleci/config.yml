@@ -843,7 +843,7 @@ commands:
       - persist_to_workspace:
           root: /home/circleci
           paths:
-            - code-coverage/overall-coverage
+            - projects/test-coverage/target/site/jacoco-overall-coverage
 
 
   restore-sdk-jacoco-coverage-report:
@@ -851,18 +851,6 @@ commands:
       - attach_workspace:
           at: /home/circleci/
       
-
-
-
-
-  save-sdk-codecoverage-reports:
-    steps:
-      - store_artifacts:
-          path: test-coverage/target/site
-
-
-
-
 
   save-sdk-workspace:
     steps:
