@@ -844,7 +844,7 @@ commands:
           name: Save Jacoco's overall code coverage report (w/ unit & integr. tests)
           command: |
             mkdir -p ~/code-coverage/overall-coverage/
-            cp test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/overall-coverage/
+            cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/overall-coverage/
       - store_artifacts:
           path: ~/code-coverage/overall-coverage
       - persist_to_workspace:
