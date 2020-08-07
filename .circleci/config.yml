@@ -814,7 +814,7 @@ commands:
           name: Save Jacoco code coverage (w/ unit tests)
           command: |
             mkdir -p ~/code-coverage/unit-tests/
-            cp test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/unit-tests/
+            cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/unit-tests/
       - store_artifacts:
           path: ~/code-coverage/unit-tests
       # - persist_to_workspace:
@@ -829,7 +829,7 @@ commands:
           name: Save Jacoco code coverage (w/ integration tests)
           command: |
             mkdir -p ~/code-coverage/integration-tests/
-            cp test-coverage/target/site/jacoco-it-coverage ~/code-coverage/integration-tests/
+            cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/integration-tests/
       - store_artifacts:
           path: ~/code-coverage/integration-tests
       # - persist_to_workspace:
