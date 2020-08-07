@@ -217,6 +217,7 @@
                             -->
                             <excludes>
                                 <exclude>**/ClassGeneratorTest.java</exclude>
+                                <exclude>**/CoronaTestIT.java</exclude>
                             </excludes>
 
 
