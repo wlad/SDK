@@ -818,10 +818,6 @@ commands:
             cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/unit-tests/
       - store_artifacts:
           path: ~/code-coverage/unit-tests
-      # - persist_to_workspace:
-      #     root: /home/circleci
-      #     paths:
-      #       - code-coverage/unit-tests
 
 
   save-sdk-jacoco-coverage-integrationtests:
@@ -833,10 +829,6 @@ commands:
             cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/integration-tests/
       - store_artifacts:
           path: ~/code-coverage/integration-tests
-      # - persist_to_workspace:
-      #     root: /home/circleci
-      #     paths:
-      #       - code-coverage/integration-tests
 
   
   save-sdk-jacoco-coverage-report:
