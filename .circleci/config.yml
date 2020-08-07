@@ -733,7 +733,7 @@ commands:
             This way only the Java integration tests are executed.
           command: |
             jps
-            mvn verify -DskipIntegrationTests=flase -Dmaven.javadoc.skip=true
+            mvn test -Pslow -Dmaven.javadoc.skip=true
 
 
   run-java-integration-tests-of-sdk:
@@ -758,7 +758,7 @@ commands:
             grep -m 1 "Started EhrBase in" <(tail -f log)
             cd ..
             jps
-            mvn test -Pslow -Dmaven.javadoc.skip=true
+            mvn verify -DskipIntegrationTests=flase -Dmaven.javadoc.skip=true
 
 
   cache-out-sdk-m2-dependencies:
