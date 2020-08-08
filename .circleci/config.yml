@@ -190,12 +190,12 @@ workflows:
           requires:
             - build-openEHR_SDK
             - test-openEHR_SDK
-          filters:
-            branches:
-              ignore:
-                - master
-                - develop
-                - release
+          # filters:
+          #   branches:
+          #     ignore:
+          #       - master
+          #       - develop
+          #       - release
 
 
 
