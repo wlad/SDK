@@ -300,7 +300,6 @@ jobs:
     steps:
       - checkout
       - restore-sdk-workspace
-      # - restore-sdk-jacoco-coverage-report
       - sonarcloud/scan:
           cache_version: 1       # NOTE: increment this value to force cache rebuild
       - save-jacoco-overall-coverage
