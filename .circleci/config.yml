@@ -185,17 +185,17 @@ workflows:
       #           - develop
       #           - release
 
-      - run-static-code-analysis:
-          context: org-global
-          requires:
-            - build-openEHR_SDK
-            - test-openEHR_SDK
-          # filters:
-          #   branches:
-          #     ignore:
-          #       - master
-          #       - develop
-          #       - release
+      # - run-static-code-analysis:
+      #     context: org-global
+      #     requires:
+      #       - build-openEHR_SDK
+      #       - test-openEHR_SDK
+      #     # filters:
+      #     #   branches:
+      #     #     ignore:
+      #     #       - master
+      #     #       - develop
+      #     #       - release
 
 
 
@@ -239,6 +239,19 @@ workflows:
 
 
 
+  # EXTRA WORKFLOW 
+  sonar-code-analysis:
+    jobs:
+      - run-static-code-analysis:
+          context: org-global
+          # filters:
+          #   branches:
+          #     ignore:
+          #       - master
+          #       - develop
+          #       - release
+
+
 
 
 
@@ -263,8 +276,8 @@ jobs:
       - cache-out-sdk-m2-dependencies
       - build-and-test-sdk
       - cache-in-sdk-m2-dependencies
-      - save-sdk-unittest-results
-      - save-jacoco-unit-coverage
+      - collect-sdk-unittest-results
+      - save-skd-test-results
       - save-sdk-workspace
       #-----------------------------------#---------------(use this steps for pipeline debugging only)
       # - run: echo mock build SDK        # 
@@ -281,28 +294,26 @@ jobs:
       - build-sdk
       - git-clone-ehrbase-repo
       - cache-out-ehrbase-m2-dependencies
-      - force-ehrbase-to-use-local-sdk-version
-      - run-java-integration-tests-of-sdk
+      - force-ehrbase-build-to-use-local-sdk-version
+      - start-ehrbase-and-run-all-tests-of-sdk
       - cache-in-ehrbase-m2-dependencies      
       - cache-in-sdk-m2-dependencies
-      - save-sdk-integrationtest-results
-      - save-jacoco-integration-coverage
-      - save-jacoco-overall-coverage
+      - collect-sdk-integrationtest-results
+      - save-skd-test-results
 
 
-
-  run-static-code-analysis:
-    description: |
-      Runs code analysis w/ SonarCloud via CircleCI Orb provided by sonarsource team.
-      Orb documentation: https://circleci.com/orbs/registry/orb/sonarsource/sonarcloud
-      Scanner configuration happens in file sonar-project.properties in project's root folder.
-    executor: docker-python3-java11
-    steps:
-      - checkout
-      - restore-sdk-workspace
-      - sonarcloud/scan:
-          cache_version: 1       # NOTE: increment this value to force cache rebuild
-      - save-jacoco-overall-coverage
+  # run-static-code-analysis:
+  #   description: |
+  #     Runs code analysis w/ SonarCloud via CircleCI Orb provided by sonarsource team.
+  #     Orb documentation: https://circleci.com/orbs/registry/orb/sonarsource/sonarcloud
+  #     Scanner configuration happens in file sonar-project.properties in project's root folder.
+  #   executor: docker-python3-java11
+  #   steps:
+  #     - checkout
+  #     - restore-sdk-workspace
+  #     - sonarcloud/scan:
+  #         cache_version: 1       # NOTE: increment this value to force cache rebuild
+  #     - save-jacoco-overall-coverage
 
 
   build-EHRbase:
@@ -313,7 +324,7 @@ jobs:
       - restore-sdk-workspace
       - git-clone-ehrbase-repo
       - cache-out-ehrbase-m2-dependencies
-      - force-ehrbase-to-use-local-sdk-version
+      - force-ehrbase-build-to-use-local-sdk-version
       - build-and-test-ehrbase
       - cache-in-ehrbase-m2-dependencies
       - save-ehrbase-workspace
@@ -543,6 +554,31 @@ jobs:
 
 
 
+  run-static-code-analysis:
+    description: |
+      Runs code analysis w/ SonarCloud via CircleCI Orb provided by sonarsource team.
+      Orb documentation: https://circleci.com/orbs/registry/orb/sonarsource/sonarcloud
+      Scanner configuration happens in file sonar-project.properties in project's root folder.
+    executor: docker-py3-java11-postgres
+    steps:
+      - checkout
+      - cache-out-sdk-m2-dependencies
+      - build-sdk
+      - git-clone-ehrbase-repo
+      - cache-out-ehrbase-m2-dependencies
+      - force-ehrbase-build-to-use-local-sdk-version
+      - start-ehrbase-and-run-all-tests-of-sdk
+      - cache-in-ehrbase-m2-dependencies      
+      - cache-in-sdk-m2-dependencies
+      - collect-sdk-unittest-results
+      - collect-sdk-integrationtest-results
+      - save-skd-test-results
+      - save-jacoco-coverage-reports
+      - sonarcloud/scan:
+          cache_version: 1       # NOTE: increment this value to force cache rebuild
+
+
+
 
 
 
@@ -724,6 +760,8 @@ commands:
 
 
   build-and-integration-test-sdk:
+    description: |
+      WARNING: this command requires EHRbase to be up and running 
     steps:
       - install-maven
       - run:
@@ -736,7 +774,10 @@ commands:
             mvn test -Pslow -Dmaven.javadoc.skip=true
 
 
-  run-java-integration-tests-of-sdk:
+  start-ehrbase-and-run-all-tests-of-sdk:
+    description: |
+      Executes all SDK java test (unit and integration)
+      This requires EHRbase + DB to be running during test execution.
     steps:
       - install-maven
       - run:
@@ -745,7 +786,7 @@ commands:
             cd ~/projects/ehrbase
             mvn package -Dmaven.javadoc.skip=true -Dmaven.test.skip
       - run:
-          name: Start EHRbase server and run SDK's integration tests
+          name: Start EHRbase server and run all test of SDK
           command: |
             ls -la
             cd ~/projects/ehrbase
@@ -775,7 +816,7 @@ commands:
           - ~/.m2
 
 
-  save-sdk-unittest-results:
+  collect-sdk-unittest-results:
     steps:
       - run:
           name: Save unit test results
@@ -784,13 +825,13 @@ commands:
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/unit-tests/ \;
             find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/unit-tests/ \;
           when: always
-      - store_test_results:
-          path: ~/test-results
-      - store_artifacts:
-          path: ~/test-results/unit-tests
+      # - store_test_results:
+      #     path: ~/test-results
+      # - store_artifacts:
+      #     path: ~/test-results/unit-tests
   
 
-  save-sdk-integrationtest-results:
+  collect-sdk-integrationtest-results:
     steps:
       - run:
           name: Save integration test results
@@ -799,10 +840,18 @@ commands:
             find . -type f -regex ".*/target/failsafe-reports/.*xml" -exec cp {} ~/test-results/integration-tests/ \;
             find . -type f -regex ".*/target/failsafe-reports/.*txt" -exec cp {} ~/test-results/integration-tests/ \;
           when: always
+      # - store_test_results:
+      #     path: ~/test-results
+      # - store_artifacts:
+      #     path: ~/test-results/integration-tests
+
+    
+  save-skd-test-results:
+    steps:
       - store_test_results:
           path: ~/test-results
       - store_artifacts:
-          path: ~/test-results/integration-tests
+          path: ~/test-results
 
 
   save-jacoco-unit-coverage:
@@ -826,10 +875,10 @@ commands:
             cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
       - store_artifacts:
           path: ~/code-coverage/jacoco-it-coverage
-      - persist_to_workspace:
-          root: /home/circleci
-          paths:
-            - code-coverage/jacoco-overall-coverage
+      # - persist_to_workspace:
+      #     root: /home/circleci
+      #     paths:
+      #       - code-coverage/jacoco-overall-coverage
 
   
   save-jacoco-overall-coverage:
@@ -845,6 +894,16 @@ commands:
       #     root: /home/circleci
       #     paths:
       #       - code-coverage/jacoco-overall-coverage
+
+
+  save-jacoco-coverage-reports:
+    steps:
+      # - store_artifacts:
+      #     path: test-coverage/target/site/jacoco-ut-coverage
+      # - store_artifacts:
+      #     path: test-coverage/target/site/jacoco-it-coverage
+      - store_artifacts:
+          path: test-coverage/target/site/jacoco-overall-coverage
 
 
   # restore-sdk-jacoco-coverage-report:
@@ -943,7 +1002,7 @@ commands:
       - run: ls -la ehrbase
 
 
-  force-ehrbase-to-use-local-sdk-version:
+  force-ehrbase-build-to-use-local-sdk-version:
     steps:
       - install-xml-cli-tool
       - run:
@@ -1286,7 +1345,7 @@ executors:
 
 
 
-  # force-ehrbase-to-use-local-sdk-version:
+  # force-ehrbase-build-to-use-local-sdk-version:
   #   steps:
   #     - run: sudo apt install maven -y
   #     - run:
