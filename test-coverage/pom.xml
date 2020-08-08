@@ -64,10 +64,10 @@
 
                 <configuration>
                     <!-- TODO: CLARIFY W/ @S.SPISKA IF IT'S OK TO EXCLUDE THIS STUFF! -->
-                    This exclues the following bundles/modules:
+                    <!-- This exclues the following bundles/modules:
                         opt-14
                         response-dto
-                        test-data
+                        test-data -->
                     <excludes>
                         <exclude>com/oceaninformatics/characterMapping/**/*</exclude>
                         <exclude>openEHR/v1/template/**/*</exclude>
