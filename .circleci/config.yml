@@ -277,7 +277,6 @@ jobs:
       - build-and-test-sdk
       - cache-in-sdk-m2-dependencies
       - save-sdk-unittest-results
-      # - save-jacoco-unit-coverage
       - save-sdk-workspace
       #-----------------------------------#---------------(use this steps for pipeline debugging only)
       # - run: echo mock build SDK        # 
@@ -299,8 +298,6 @@ jobs:
       - cache-in-ehrbase-m2-dependencies      
       - cache-in-sdk-m2-dependencies
       - save-sdk-integrationtest-results
-      # - save-jacoco-integration-coverage
-      # - save-jacoco-overall-coverage
 
 
   # run-static-code-analysis:
@@ -564,9 +561,9 @@ jobs:
     steps:
       - checkout
       - cache-out-sdk-m2-dependencies
-      - cache-out-ehrbase-m2-dependencies
       - build-sdk
       - git-clone-ehrbase-repo
+      - cache-out-ehrbase-m2-dependencies
       - force-ehrbase-build-to-use-local-sdk-version
       - start-ehrbase-and-run-all-tests-of-sdk
       - cache-in-ehrbase-m2-dependencies      
