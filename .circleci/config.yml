@@ -264,7 +264,7 @@ jobs:
       - build-and-test-sdk
       - cache-in-sdk-m2-dependencies
       - save-sdk-unittest-results
-      - save-sdk-jacoco-coverage-unittests
+      - save-jacoco-unit-coverage
       - save-sdk-workspace
       #-----------------------------------#---------------(use this steps for pipeline debugging only)
       # - run: echo mock build SDK        # 
@@ -286,8 +286,8 @@ jobs:
       - cache-in-ehrbase-m2-dependencies      
       - cache-in-sdk-m2-dependencies
       - save-sdk-integrationtest-results
-      - save-sdk-jacoco-coverage-integrationtests
-      - save-sdk-jacoco-coverage-report
+      - save-jacoco-integration-coverage
+      - save-jacoco-overall-coverage
 
 
 
@@ -300,10 +300,10 @@ jobs:
     steps:
       - checkout
       - restore-sdk-workspace
-      - restore-sdk-jacoco-coverage-report
-      - save-sdk-jacoco-coverage-report    # just to make it available as artifact via CircleCI's UI
+      # - restore-sdk-jacoco-coverage-report
       - sonarcloud/scan:
           cache_version: 1       # NOTE: increment this value to force cache rebuild
+      - save-jacoco-overall-coverage
 
 
   build-EHRbase:
@@ -747,9 +747,6 @@ commands:
             mvn package -Dmaven.javadoc.skip=true -Dmaven.test.skip
       - run:
           name: Start EHRbase server and run SDK's integration tests
-          description: |
-            Runs maven test phase using 'slow' profile defined in parent pom.xml
-            This way only the Java integration tests are executed.
           command: |
             ls -la
             cd ~/projects/ehrbase
@@ -809,10 +806,10 @@ commands:
           path: ~/test-results/integration-tests
 
 
-  save-sdk-jacoco-coverage-unittests:
+  save-jacoco-unit-coverage:
     steps:
       - run:
-          name: Save Jacoco code coverage (w/ unit tests)
+          name: Save Jacoco code coverage (unit tests)
           command: |
             mkdir -p ~/code-coverage/
             cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/
@@ -820,36 +817,41 @@ commands:
           path: ~/code-coverage/jacoco-ut-coverage
 
 
-  save-sdk-jacoco-coverage-integrationtests:
+  save-jacoco-integration-coverage:
     steps:
       - run:
-          name: Save Jacoco code coverage (w/ integration tests)
+          name: Save Jacoco code coverage (overall & integration tests)
           command: |
             mkdir -p ~/code-coverage/
             cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/
-      - store_artifacts:
-          path: ~/code-coverage/jacoco-it-coverage
-
-  
-  save-sdk-jacoco-coverage-report:
-    steps:
-      - run:
-          name: Save Jacoco's overall code coverage report (w/ unit & integr. tests)
-          command: |
-            mkdir -p ~/code-coverage/
             cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
       - store_artifacts:
-          path: ~/code-coverage/jacoco-overall-coverage
+          path: ~/code-coverage/jacoco-it-coverage
       - persist_to_workspace:
           root: /home/circleci
           paths:
             - code-coverage/jacoco-overall-coverage
 
-
-  restore-sdk-jacoco-coverage-report:
+  
+  save-jacoco-overall-coverage:
     steps:
-      - attach_workspace:
-          at: /home/circleci/
+      # - run:
+      #     name: Save Jacoco's overall code coverage report (w/ unit & integr. tests)
+      #     command: |
+      #       mkdir -p ~/code-coverage/
+      #       cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
+      - store_artifacts:
+          path: ~/code-coverage/jacoco-overall-coverage
+      # - persist_to_workspace:
+      #     root: /home/circleci
+      #     paths:
+      #       - code-coverage/jacoco-overall-coverage
+
+
+  # restore-sdk-jacoco-coverage-report:
+  #   steps:
+  #     - attach_workspace:
+  #         at: /home/circleci/
       
 
   save-sdk-workspace:
