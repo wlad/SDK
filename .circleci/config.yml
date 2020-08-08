@@ -1,20 +1,21 @@
 version: 2.1
 
 # OVERVIEW - What this CI pipeline does:
+#
 # 1. build & (unit)test the SDK
 # 2. build & (unit)test EHRbase w/ SDK (as local dependency)
 # 3. run SDK's Java integration tests
 # 4. conduct (static) code analysis w/ Sonar scanner and send results to sonarcloud.io
 #    - this includes code coverage from unit & integration tests (written in Java)
 # 5. run Robot integation tests (from EHRbase's repo)
-# 6. publish snapshot & release versions on jitpack.io
-#    - after manually creating a release (via Github UI) based on one of these versions
+# 6. publish git tag based snapshot & release versions on jitpack.io
+#    - requires manually creating a release (via Github UI) from a given git tag
 #    - jitpack will build related artifacts on demand
 
 
 workflows:
 
-  # WORKFLOW 1/4) Build & Test the SDK
+  # WORKFLOW 1/5) Build & Test the SDK
   build_and_test_SDK:
     jobs:
       - build-openEHR_SDK:
@@ -185,21 +186,9 @@ workflows:
       #           - develop
       #           - release
 
-      # - run-static-code-analysis:
-      #     context: org-global
-      #     requires:
-      #       - build-openEHR_SDK
-      #       - test-openEHR_SDK
-      #     # filters:
-      #     #   branches:
-      #     #     ignore:
-      #     #       - master
-      #     #       - develop
-      #     #       - release
 
 
-
-  # WORKFLOW 2/4) Publish Git tags for SNAPSHOT releases
+  # WORKFLOW 2/5) Publish Git tags for SNAPSHOT releases
   deploy-snapshot-release:
     when:
       and:
@@ -215,7 +204,7 @@ workflows:
 
 
 
-  # WORKFLOW 3/4) Publish Git tag for (stable) releases
+  # WORKFLOW 3/5) Publish Git tag for (stable) releases
   deploy-stable-release:
     when:
       and:
@@ -225,7 +214,7 @@ workflows:
 
 
 
-  # # WORKFLOW 4/4) Update SDK version in EHRbase's POM /w lastest stable release
+  # # WORKFLOW 4/5) Update SDK version in EHRbase's POM /w lastest stable release
   # update-ehrbase-sdk-dependency:
   #   when:
   #     and:
@@ -239,10 +228,10 @@ workflows:
 
 
 
-  # EXTRA WORKFLOW 
+  # WORKFLOW 5/5) Code analysis w/ SonarCloud.io 
   sonar-code-analysis:
     jobs:
-      - run-static-code-analysis:
+      - run-code-analysis:
           context: org-global
           # filters:
           #   branches:
@@ -250,6 +239,7 @@ workflows:
           #       - master
           #       - develop
           #       - release
+
 
 
 
@@ -300,20 +290,6 @@ jobs:
       - cache-in-sdk-m2-dependencies
       - collect-sdk-integrationtest-results
       - save-skd-test-results
-
-
-  # run-static-code-analysis:
-  #   description: |
-  #     Runs code analysis w/ SonarCloud via CircleCI Orb provided by sonarsource team.
-  #     Orb documentation: https://circleci.com/orbs/registry/orb/sonarsource/sonarcloud
-  #     Scanner configuration happens in file sonar-project.properties in project's root folder.
-  #   executor: docker-python3-java11
-  #   steps:
-  #     - checkout
-  #     - restore-sdk-workspace
-  #     - sonarcloud/scan:
-  #         cache_version: 1       # NOTE: increment this value to force cache rebuild
-  #     - save-jacoco-overall-coverage
 
 
   build-EHRbase:
@@ -553,8 +529,7 @@ jobs:
       # - cache-out-versionupdater-dependencies
 
 
-
-  run-static-code-analysis:
+  run-code-analysis:
     description: |
       Runs code analysis w/ SonarCloud via CircleCI Orb provided by sonarsource team.
       Orb documentation: https://circleci.com/orbs/registry/orb/sonarsource/sonarcloud
@@ -573,7 +548,7 @@ jobs:
       - collect-sdk-unittest-results
       - collect-sdk-integrationtest-results
       - save-skd-test-results
-      - save-jacoco-coverage-reports
+      - save-jacoco-coverage-report
       - sonarcloud/scan:
           cache_version: 1       # NOTE: increment this value to force cache rebuild
 
@@ -825,10 +800,6 @@ commands:
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/unit-tests/ \;
             find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/unit-tests/ \;
           when: always
-      # - store_test_results:
-      #     path: ~/test-results
-      # - store_artifacts:
-      #     path: ~/test-results/unit-tests
   
 
   collect-sdk-integrationtest-results:
@@ -840,10 +811,6 @@ commands:
             find . -type f -regex ".*/target/failsafe-reports/.*xml" -exec cp {} ~/test-results/integration-tests/ \;
             find . -type f -regex ".*/target/failsafe-reports/.*txt" -exec cp {} ~/test-results/integration-tests/ \;
           when: always
-      # - store_test_results:
-      #     path: ~/test-results
-      # - store_artifacts:
-      #     path: ~/test-results/integration-tests
 
     
   save-skd-test-results:
@@ -854,49 +821,10 @@ commands:
           path: ~/test-results
 
 
-  save-jacoco-unit-coverage:
-    steps:
-      - run:
-          name: Save Jacoco code coverage (unit tests)
-          command: |
-            mkdir -p ~/code-coverage/
-            cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/
-      - store_artifacts:
-          path: ~/code-coverage/jacoco-ut-coverage
-
-
-  save-jacoco-integration-coverage:
-    steps:
-      - run:
-          name: Save Jacoco code coverage (overall & integration tests)
-          command: |
-            mkdir -p ~/code-coverage/
-            cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/
-            cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
-      - store_artifacts:
-          path: ~/code-coverage/jacoco-it-coverage
-      # - persist_to_workspace:
-      #     root: /home/circleci
-      #     paths:
-      #       - code-coverage/jacoco-overall-coverage
-
-  
-  save-jacoco-overall-coverage:
-    steps:
-      # - run:
-      #     name: Save Jacoco's overall code coverage report (w/ unit & integr. tests)
-      #     command: |
-      #       mkdir -p ~/code-coverage/
-      #       cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
-      - store_artifacts:
-          path: ~/code-coverage/jacoco-overall-coverage
-      # - persist_to_workspace:
-      #     root: /home/circleci
-      #     paths:
-      #       - code-coverage/jacoco-overall-coverage
-
-
-  save-jacoco-coverage-reports:
+  save-jacoco-coverage-report:
+    description: |
+      Uploads the overall coverage report as circleci artifact
+      The separate reports for unit and integration coverage are not required.
     steps:
       # - store_artifacts:
       #     path: test-coverage/target/site/jacoco-ut-coverage
@@ -904,12 +832,6 @@ commands:
       #     path: test-coverage/target/site/jacoco-it-coverage
       - store_artifacts:
           path: test-coverage/target/site/jacoco-overall-coverage
-
-
-  # restore-sdk-jacoco-coverage-report:
-  #   steps:
-  #     - attach_workspace:
-  #         at: /home/circleci/
       
 
   save-sdk-workspace:
@@ -922,6 +844,11 @@ commands:
 
 
   restore-sdk-workspace:
+    description: |
+      Restores any file / folder that was previously persisted w/ 'persist_to_workspace'.
+      NOTE: best practise is to persist files or folders very selectively.
+            Do not persist root or the whole workspace at one, otherwise concurrent jobs
+            may fail to restore that stuff.
     steps:
       - attach_workspace:
           at: /home/circleci/
@@ -1392,3 +1319,40 @@ executors:
   #               echo -n "It's there."
   #               ;;
   #           esac
+
+
+
+  #   save-jacoco-unit-coverage:
+  #   steps:
+  #     - run:
+  #         name: Save Jacoco code coverage (unit tests)
+  #         command: |
+  #           mkdir -p ~/code-coverage/
+  #           cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/
+  #     - store_artifacts:
+  #         path: ~/code-coverage/jacoco-ut-coverage
+
+  # save-jacoco-integration-coverage:
+  #   steps:
+  #     - run:
+  #         name: Save Jacoco code coverage (overall & integration tests)
+  #         command: |
+  #           mkdir -p ~/code-coverage/
+  #           cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/
+  #           cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
+  #     - store_artifacts:
+  #         path: ~/code-coverage/jacoco-it-coverage
+  
+  # save-jacoco-overall-coverage:
+  #   steps:
+  #     - run:
+  #         name: Save Jacoco's overall code coverage report (w/ unit & integr. tests)
+  #         command: |
+  #           mkdir -p ~/code-coverage/
+  #           cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
+  #     - store_artifacts:
+  #         path: ~/code-coverage/jacoco-overall-coverage
+  #     # - persist_to_workspace:
+  #     #     root: /home/circleci
+  #     #     paths:
+  #     #       - code-coverage/jacoco-overall-coverage
