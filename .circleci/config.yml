@@ -276,7 +276,8 @@ jobs:
       - cache-out-sdk-m2-dependencies
       - build-and-test-sdk
       - cache-in-sdk-m2-dependencies
-      - save-sdk-unittest-results
+      - collect-sdk-unittest-results
+      - save-skd-test-results
       - save-sdk-workspace
       #-----------------------------------#---------------(use this steps for pipeline debugging only)
       # - run: echo mock build SDK        # 
@@ -297,7 +298,8 @@ jobs:
       - start-ehrbase-and-run-all-tests-of-sdk
       - cache-in-ehrbase-m2-dependencies      
       - cache-in-sdk-m2-dependencies
-      - save-sdk-integrationtest-results
+      - collect-sdk-integrationtest-results
+      - save-skd-test-results
 
 
   # run-static-code-analysis:
@@ -568,8 +570,9 @@ jobs:
       - start-ehrbase-and-run-all-tests-of-sdk
       - cache-in-ehrbase-m2-dependencies      
       - cache-in-sdk-m2-dependencies
-      - save-sdk-unittest-results
-      - save-sdk-integrationtest-results
+      - collect-sdk-unittest-results
+      - collect-sdk-integrationtest-results
+      - save-skd-test-results
       - save-jacoco-coverage-reports
       - sonarcloud/scan:
           cache_version: 1       # NOTE: increment this value to force cache rebuild
@@ -813,7 +816,7 @@ commands:
           - ~/.m2
 
 
-  save-sdk-unittest-results:
+  collect-sdk-unittest-results:
     steps:
       - run:
           name: Save unit test results
@@ -822,13 +825,13 @@ commands:
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/test-results/unit-tests/ \;
             find . -type f -regex ".*/target/surefire-reports/.*txt" -exec cp {} ~/test-results/unit-tests/ \;
           when: always
-      - store_test_results:
-          path: ~/test-results
-      - store_artifacts:
-          path: ~/test-results/unit-tests
+      # - store_test_results:
+      #     path: ~/test-results
+      # - store_artifacts:
+      #     path: ~/test-results/unit-tests
   
 
-  save-sdk-integrationtest-results:
+  collect-sdk-integrationtest-results:
     steps:
       - run:
           name: Save integration test results
@@ -837,10 +840,18 @@ commands:
             find . -type f -regex ".*/target/failsafe-reports/.*xml" -exec cp {} ~/test-results/integration-tests/ \;
             find . -type f -regex ".*/target/failsafe-reports/.*txt" -exec cp {} ~/test-results/integration-tests/ \;
           when: always
+      # - store_test_results:
+      #     path: ~/test-results
+      # - store_artifacts:
+      #     path: ~/test-results/integration-tests
+
+    
+  save-skd-test-results:
+    steps:
       - store_test_results:
           path: ~/test-results
       - store_artifacts:
-          path: ~/test-results/integration-tests
+          path: ~/test-results
 
 
   save-jacoco-unit-coverage:
@@ -887,17 +898,10 @@ commands:
 
   save-jacoco-coverage-reports:
     steps:
-      # - run:
-      #     name: Save Jacoco code coverage (overall & integration tests)
-      #     command: |
-      #       mkdir -p ~/code-coverage/
-      #       cp -r test-coverage/target/site/jacoco-ut-coverage ~/code-coverage/
-      #       cp -r test-coverage/target/site/jacoco-it-coverage ~/code-coverage/
-      #       cp -r test-coverage/target/site/jacoco-overall-coverage ~/code-coverage/
-      - store_artifacts:
-          path: test-coverage/target/site/jacoco-ut-coverage
-      - store_artifacts:
-          path: test-coverage/target/site/jacoco-it-coverage
+      # - store_artifacts:
+      #     path: test-coverage/target/site/jacoco-ut-coverage
+      # - store_artifacts:
+      #     path: test-coverage/target/site/jacoco-it-coverage
       - store_artifacts:
           path: test-coverage/target/site/jacoco-overall-coverage
 
